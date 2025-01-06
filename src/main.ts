@@ -30,6 +30,7 @@ let particles: Particle[] = [];
 let positions: number[] = []; // WebGL へ送る頂点座標
 let velocities: number[] = []; // WebGL へ送る速度情報
 let colors: number[] = []; // WebGL へ送る色情報
+let types: number[] = []; // WebGL へ送る粒子種別情報
 
 /****************************************************************************
  * 粒子を表すクラス（CPU側でシミュレーションを担う）
@@ -190,6 +191,16 @@ function updateSimulation(): void {
     boundaryCheck(predator);
   }
 
+  // spacial partitioning
+  const grid: Record<string, Particle[]> = {};
+  for (const p of particles) {
+    const key = `${Math.floor(p.x / 50)}_${Math.floor(p.y / 50)}`;
+    if (!grid[key]) {
+      grid[key] = [];
+    }
+    grid[key].push(p);
+  }
+
   // Boids (簡易的な実装)
   const vision = 50;
   const dist = (p1: Particle, p2: Particle) => {
@@ -197,14 +208,24 @@ function updateSimulation(): void {
     const dy = p1.y - p2.y;
     return Math.sqrt(dx * dx + dy * dy);
   };
-  particles.forEach((p, i) => {
-    const qs = particles
-      .filter((_, j) => j % 10 === i % 10)
-      .filter((q) => dist(p, q) < vision);
+  particles.forEach((p) => {
+    const neighbors: Particle[] = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        const k = `${Math.floor(p.x / 50) + dx}_${Math.floor(p.y / 50) + dy}`;
+        if (grid[k]) {
+          grid[k].forEach((q) => {
+            if (p !== q && dist(p, q) < vision) {
+              neighbors.push(q);
+            }
+          });
+        }
+      }
+    }
 
-    if (qs.length > 0) {
+    if (neighbors.length > 0) {
       // separation
-      const sep = qs.reduce(
+      const sep = neighbors.reduce(
         (acc, q) => {
           const dx = p.x - q.x;
           const dy = p.y - q.y;
@@ -221,7 +242,7 @@ function updateSimulation(): void {
       p.vy += sep[1] * 0.1;
 
       // alignment
-      const avg = qs.reduce(
+      const avg = neighbors.reduce(
         (acc, q) => {
           acc[0] += q.vx;
           acc[1] += q.vy;
@@ -233,7 +254,7 @@ function updateSimulation(): void {
       p.vy += avg[1] * 0.1;
 
       // cohesion
-      const center = qs.reduce(
+      const center = neighbors.reduce(
         (acc, q) => {
           acc[0] += q.x;
           acc[1] += q.y;
@@ -241,8 +262,8 @@ function updateSimulation(): void {
         },
         [0, 0]
       );
-      center[0] /= qs.length;
-      center[1] /= qs.length;
+      center[0] /= neighbors.length;
+      center[1] /= neighbors.length;
 
       const dx = center[0] - p.x;
       const dy = center[1] - p.y;
@@ -283,6 +304,7 @@ function drawScene(): void {
   positions = [];
   velocities = [];
   colors = [];
+  types = [];
   for (const p of particles) {
     positions.push(p.x, p.y);
     velocities.push(p.vx, p.vy);
@@ -293,6 +315,7 @@ function drawScene(): void {
       // 捕食者 => 赤系
       colors.push(1.0, 0.3, 0.3);
     }
+    types.push(p.type);
   }
 
   // ------------ バッファ準備 ------------
@@ -314,9 +337,16 @@ function drawScene(): void {
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STREAM_DRAW);
 
+  // 種別バッファ
+  const typeBuffer = gl.createBuffer();
+  if (!typeBuffer) return;
+  gl.bindBuffer(gl.ARRAY_BUFFER, typeBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(types), gl.STREAM_DRAW);
+
   const a_position_location = gl.getAttribLocation(program, "a_position");
   const a_velocity_location = gl.getAttribLocation(program, "a_velocity");
   const a_color_location = gl.getAttribLocation(program, "a_color");
+  const a_type_location = gl.getAttribLocation(program, "a_type");
 
   // a_position に頂点バッファを設定
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -332,6 +362,11 @@ function drawScene(): void {
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   gl.vertexAttribPointer(a_color_location, 3, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_color_location);
+
+  // a_type に種別バッファを設定
+  gl.bindBuffer(gl.ARRAY_BUFFER, typeBuffer);
+  gl.vertexAttribPointer(a_type_location, 1, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_type_location);
 
   // ドローコール
   gl.drawArrays(gl.POINTS, 0, positions.length / 2);

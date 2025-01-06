@@ -2,6 +2,7 @@ precision mediump float;
 
 varying vec3 v_color;
 varying vec2 v_velocity;
+varying float v_type;
 
 float softEdge(float edge, float amt) {
   return clamp(1.0 / (clamp(edge, 1.0 / amt, 1.0) * amt), 0., 1.);
@@ -12,5 +13,10 @@ void main(void) {
   float d = length(uv);
 
   vec3 v_color = vec3(abs(v_velocity), 1.0);
-  gl_FragColor = vec4(v_color, 1.0) * softEdge(d, 50.0);
+
+  float softness = 50.0;
+  if (v_type == 0.0) {
+    softness = 150.0;
+  }
+  gl_FragColor = vec4(v_color, 1.0) * softEdge(d, softness);
 }
