@@ -7,8 +7,8 @@ import fsSource from "./shaders/fragment.glslx?raw";
 // ======== シミュレーションパラメータ ========
 
 // 粒子数
-const NUM_PREY: number = 80; // 被捕食者（プレイ）
-const NUM_PREDATORS: number = 5; // 捕食者
+const NUM_PREY: number = 8000; // 被捕食者（プレイ）
+const NUM_PREDATORS: number = 50; // 捕食者
 // スピード関連
 const PREY_SPEED: number = 1.0;
 const PREDATOR_SPEED: number = 1.6;
@@ -336,6 +336,9 @@ function initShaders(gl: WebGLRenderingContext): WebGLProgram | null {
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   // 成功チェック
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
