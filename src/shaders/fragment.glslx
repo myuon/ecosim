@@ -3,17 +3,14 @@ precision mediump float;
 varying vec3 v_color;
 varying vec2 v_velocity;
 
+float softEdge(float edge, float amt) {
+  return clamp(1.0 / (clamp(edge, 1.0 / amt, 1.0) * amt), 0., 1.);
+}
+
 void main(void) {
-  vec3 base_color = vec3(0.07, 0.07, 0.07);
-  vec2 uv = gl_PointCoord.xy * 1.0 - 0.5;
-  vec2 suv = gl_PointCoord.xy * 6.0 - 3.0;
-  float d = length(suv);
+  vec2 uv = gl_PointCoord.xy * 2.0 - 1.0;
+  float d = length(uv);
 
-  vec3 velocity_color = vec3(v_velocity, 0.5);
-
-  vec3 color = 3.0 * clamp(0.5 - length(uv), 0.0, 0.5) * clamp(velocity_color / pow(d, 2.0), 0.0, 2.0);
-  float alpha = length(color);
-  vec3 mixed_color = mix(base_color, color, length(color));
-
-  gl_FragColor = vec4(mix(mixed_color, velocity_color, 0.5), alpha);
+  vec3 v_color = vec3(abs(v_velocity), 1.0);
+  gl_FragColor = vec4(v_color, 1.0) * softEdge(d, 50.0);
 }
