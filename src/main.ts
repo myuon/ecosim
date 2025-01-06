@@ -7,7 +7,7 @@ import fsSource from "./shaders/fragment.glslx?raw";
 // ======== シミュレーションパラメータ ========
 
 // 粒子数
-const NUM_PREY: number = 8000; // 被捕食者（プレイ）
+const NUM_PREY: number = 1000; // 被捕食者（プレイ）
 const NUM_PREDATORS: number = 50; // 捕食者
 // スピード関連
 const PREY_SPEED: number = 1.0;
@@ -28,6 +28,7 @@ let u_resolution_location: WebGLUniformLocation | null = null;
 
 let particles: Particle[] = [];
 let positions: number[] = []; // WebGL へ送る頂点座標
+let velocities: number[] = []; // WebGL へ送る速度情報
 let colors: number[] = []; // WebGL へ送る色情報
 
 /****************************************************************************
@@ -280,9 +281,11 @@ function drawScene(): void {
 
   // 現在の粒子データを WebGL へ送るために配列を作り直す
   positions = [];
+  velocities = [];
   colors = [];
   for (const p of particles) {
     positions.push(p.x, p.y);
+    velocities.push(p.vx, p.vy);
     if (p.type === ParticleType.Prey) {
       // 被捕食者 => 青系
       colors.push(0.3, 0.6, 1.0);
@@ -299,6 +302,12 @@ function drawScene(): void {
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STREAM_DRAW);
 
+  // 速度バッファ
+  const velocityBuffer = gl.createBuffer();
+  if (!velocityBuffer) return;
+  gl.bindBuffer(gl.ARRAY_BUFFER, velocityBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(velocities), gl.STREAM_DRAW);
+
   // カラーバッファ
   const colorBuffer = gl.createBuffer();
   if (!colorBuffer) return;
@@ -306,12 +315,18 @@ function drawScene(): void {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STREAM_DRAW);
 
   const a_position_location = gl.getAttribLocation(program, "a_position");
+  const a_velocity_location = gl.getAttribLocation(program, "a_velocity");
   const a_color_location = gl.getAttribLocation(program, "a_color");
 
   // a_position に頂点バッファを設定
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.vertexAttribPointer(a_position_location, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(a_position_location);
+
+  // a_velocity に頂点バッファを設定
+  gl.bindBuffer(gl.ARRAY_BUFFER, velocityBuffer);
+  gl.vertexAttribPointer(a_velocity_location, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_velocity_location);
 
   // a_color にカラーバッファを設定
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
