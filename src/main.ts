@@ -1,6 +1,8 @@
 /****************************************************************************
  *  WebGL Predator-Prey Simulation in TypeScript
  ****************************************************************************/
+import vsSource from "./shaders/vertex.glslx?raw";
+import fsSource from "./shaders/fragment.glslx?raw";
 
 // ======== シミュレーションパラメータ ========
 
@@ -316,40 +318,8 @@ function findClosestPrey(
 /****************************************************************************
  * 5. シェーダー関連の初期化
  ****************************************************************************/
+
 function initShaders(gl: WebGLRenderingContext): WebGLProgram | null {
-  // --------- 頂点シェーダ (Vertex Shader) ---------
-  const vsSource = `
-    attribute vec2 a_position;
-    attribute vec3 a_color;
-    varying vec3 v_color;
-    uniform vec2 u_resolution;
-
-    void main(void) {
-      // [0, resolution] -> [0, 1]
-      vec2 zeroToOne = a_position / u_resolution;
-      // [0,1] -> [0,2]
-      vec2 zeroToTwo = zeroToOne * 2.0;
-      // [0,2] -> [-1,1]
-      vec2 clipSpace = zeroToTwo - 1.0;
-      // y 軸は上下逆
-      clipSpace.y = -clipSpace.y;
-
-      gl_Position = vec4(clipSpace, 0.0, 1.0);
-      // 点のサイズ(一律)
-      gl_PointSize = 6.0;
-      v_color = a_color;
-    }
-  `;
-
-  // --------- フラグメントシェーダ (Fragment Shader) ---------
-  const fsSource = `
-    precision mediump float;
-    varying vec3 v_color;
-    void main(void) {
-      gl_FragColor = vec4(v_color, 1.0);
-    }
-  `;
-
   // シェーダーのコンパイル
   const vertexShader = compileShader(gl, vsSource, gl.VERTEX_SHADER);
   const fragmentShader = compileShader(gl, fsSource, gl.FRAGMENT_SHADER);
