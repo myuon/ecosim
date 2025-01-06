@@ -189,6 +189,67 @@ function updateSimulation(): void {
     boundaryCheck(predator);
   }
 
+  // Boids (簡易的な実装)
+  const vision = 50;
+  const dist = (p1: Particle, p2: Particle) => {
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+  particles.forEach((p, i) => {
+    const qs = particles
+      .filter((_, j) => j % 10 === i % 10)
+      .filter((q) => dist(p, q) < vision);
+
+    if (qs.length > 0) {
+      // separation
+      const sep = qs.reduce(
+        (acc, q) => {
+          const dx = p.x - q.x;
+          const dy = p.y - q.y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d > 0) {
+            acc[0] += dx / d;
+            acc[1] += dy / d;
+          }
+          return acc;
+        },
+        [0, 0]
+      );
+      p.vx += sep[0] * 0.1;
+      p.vy += sep[1] * 0.1;
+
+      // alignment
+      const avg = qs.reduce(
+        (acc, q) => {
+          acc[0] += q.vx;
+          acc[1] += q.vy;
+          return acc;
+        },
+        [0, 0]
+      );
+      p.vx += avg[0] * 0.1;
+      p.vy += avg[1] * 0.1;
+
+      // cohesion
+      const center = qs.reduce(
+        (acc, q) => {
+          acc[0] += q.x;
+          acc[1] += q.y;
+          return acc;
+        },
+        [0, 0]
+      );
+      center[0] /= qs.length;
+      center[1] /= qs.length;
+
+      const dx = center[0] - p.x;
+      const dy = center[1] - p.y;
+      p.vx += dx * 0.01;
+      p.vy += dy * 0.01;
+    }
+  });
+
   // ----- 捕食判定 -----
   for (const predator of predatorList) {
     for (const prey of preyList) {
