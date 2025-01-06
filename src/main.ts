@@ -227,6 +227,8 @@ function updateSimulation(): void {
       // separation
       const sep = neighbors.reduce(
         (acc, q) => {
+          if (p.type !== q.type) return acc;
+
           const dx = p.x - q.x;
           const dy = p.y - q.y;
           const d = Math.sqrt(dx * dx + dy * dy);
@@ -244,6 +246,8 @@ function updateSimulation(): void {
       // alignment
       const avg = neighbors.reduce(
         (acc, q) => {
+          if (p.type !== q.type) return acc;
+
           acc[0] += q.vx;
           acc[1] += q.vy;
           return acc;
@@ -256,6 +260,8 @@ function updateSimulation(): void {
       // cohesion
       const center = neighbors.reduce(
         (acc, q) => {
+          if (p.type !== q.type) return acc;
+
           acc[0] += q.x;
           acc[1] += q.y;
           return acc;
