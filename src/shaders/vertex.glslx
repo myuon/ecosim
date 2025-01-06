@@ -15,6 +15,6 @@ void main(void) {
 
   gl_Position = vec4(clipSpace, 0.0, 1.0);
   // 点のサイズ(一律)
-  gl_PointSize = 6.0;
+  gl_PointSize = 24.0;
   v_color = a_color;
 }
