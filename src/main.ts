@@ -42,13 +42,15 @@ class Particle {
   vy: number;
   type: ParticleType;
   alive: boolean;
+  hungriness: number;
 
   constructor(
     x: number,
     y: number,
     vx: number,
     vy: number,
-    type: ParticleType
+    type: ParticleType,
+    hungriness: number
   ) {
     this.x = x;
     this.y = y;
@@ -56,6 +58,7 @@ class Particle {
     this.vy = vy;
     this.type = type;
     this.alive = true;
+    this.hungriness = hungriness;
   }
 }
 
@@ -112,7 +115,7 @@ function initSimulation(): void {
     // 被捕食者は少しランダムな速度
     const vx = (Math.random() - 0.5) * PREY_SPEED * 2;
     const vy = (Math.random() - 0.5) * PREY_SPEED * 2;
-    particles.push(new Particle(x, y, vx, vy, ParticleType.Prey));
+    particles.push(new Particle(x, y, vx, vy, ParticleType.Prey, 1));
   }
 
   // 捕食者 (Predator) の初期配置
@@ -122,7 +125,7 @@ function initSimulation(): void {
     // 捕食者はやや速め
     const vx = (Math.random() - 0.5) * PREDATOR_SPEED * 2;
     const vy = (Math.random() - 0.5) * PREDATOR_SPEED * 2;
-    particles.push(new Particle(x, y, vx, vy, ParticleType.Predator));
+    particles.push(new Particle(x, y, vx, vy, ParticleType.Predator, 100));
   }
 }
 
@@ -186,6 +189,30 @@ function updateSimulation(): void {
     // 位置更新
     predator.x += predator.vx;
     predator.y += predator.vy;
+
+    if (predator.type === ParticleType.Predator) {
+      predator.hungriness -= 0.1;
+
+      predator.vy *= predator.hungriness / 100;
+      predator.vx *= predator.hungriness / 100;
+    }
+
+    if (predator.hungriness <= 0) {
+      predator.alive = false;
+
+      for (let i = 0; i < 10; i++) {
+        particles.push(
+          new Particle(
+            predator.x + (Math.random() - 0.5) * 20,
+            predator.y + (Math.random() - 0.5) * 20,
+            (Math.random() - 0.5) * PREY_SPEED * 2,
+            (Math.random() - 0.5) * PREY_SPEED * 2,
+            ParticleType.Prey,
+            1
+          )
+        );
+      }
+    }
 
     // 画面端チェック
     boundaryCheck(predator);
@@ -288,6 +315,8 @@ function updateSimulation(): void {
       if (dist < EAT_DISTANCE) {
         // prey を捕食 → prey を消す
         prey.alive = false;
+
+        predator.hungriness += 20;
       }
     }
   }
