@@ -242,7 +242,7 @@ function updateSimulation(): void {
         const k = `${Math.floor(p.x / 50) + dx}_${Math.floor(p.y / 50) + dy}`;
         if (grid[k]) {
           grid[k].forEach((q) => {
-            if (p !== q && dist(p, q) < vision) {
+            if (p !== q && dist(p, q) < vision && p.type === q.type) {
               neighbors.push(q);
             }
           });
@@ -254,8 +254,6 @@ function updateSimulation(): void {
       // separation
       const sep = neighbors.reduce(
         (acc, q) => {
-          if (p.type !== q.type) return acc;
-
           const dx = p.x - q.x;
           const dy = p.y - q.y;
           const d = Math.sqrt(dx * dx + dy * dy);
@@ -273,8 +271,6 @@ function updateSimulation(): void {
       // alignment
       const avg = neighbors.reduce(
         (acc, q) => {
-          if (p.type !== q.type) return acc;
-
           acc[0] += q.vx;
           acc[1] += q.vy;
           return acc;
@@ -287,8 +283,6 @@ function updateSimulation(): void {
       // cohesion
       const center = neighbors.reduce(
         (acc, q) => {
-          if (p.type !== q.type) return acc;
-
           acc[0] += q.x;
           acc[1] += q.y;
           return acc;
